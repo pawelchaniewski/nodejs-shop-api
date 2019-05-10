@@ -5,9 +5,13 @@ if (process.env.NODE_ENV !== "production") {
 const mongoose = require("mongoose");
 const express = require("express");
 const app = express();
+const bodyParser = require("body-parser");
 
 const indexRouter = require("./routes/index");
+const productRouter = require("./routes/products");
+app.use(bodyParser.json());
 app.use("/", indexRouter);
+app.use("/products", productRouter);
 
 const dbAddress = process.env.DATABASE_URL;
 const dbOptions = { useNewUrlParser: true };
