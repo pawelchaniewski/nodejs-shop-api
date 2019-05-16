@@ -4,6 +4,11 @@ const productSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true
+  },
+  stock: {
+    type: Number,
+    required: false,
+    default: 0
   }
 });
 

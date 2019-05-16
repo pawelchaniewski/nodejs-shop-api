@@ -7,8 +7,10 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 
+// Routers
 const indexRouter = require("./routes/index");
 const productRouter = require("./routes/products");
+
 app.use(bodyParser.json());
 app.use("/", indexRouter);
 app.use("/products", productRouter);
