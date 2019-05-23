@@ -3,22 +3,22 @@ const router = express.Router();
 const Product = require("../models/product");
 
 // Single products route
-router.get("/get/:productId", getProduct, (req, res) => {
+router.get("/:productId", getProduct, (req, res) => {
   res.json(res.product);
 });
 
 // All products route
-router.get("/list", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const products = await Product.find({});
     res.json(products);
   } catch (err) {
-    res.status(500).json({ errorMessage: err.message });
+    res.status(500).json({ message: err.message });
   }
 });
 
 // Add product route
-router.post("/add", async (req, res) => {
+router.post("/", authAdmin, async (req, res) => {
   const product = new Product({
     name: req.body.name,
     stock: req.body.stock || 0
@@ -31,12 +31,12 @@ router.post("/add", async (req, res) => {
       message: "Success"
     });
   } catch (err) {
-    res.status(400).json({ errorMessage: err.message });
+    res.status(400).json({ message: err.message });
   }
 });
 
 // Update one product route
-router.patch("/update/:productId", getProduct, async (req, res) => {
+router.patch("/:productId", authAdmin, getProduct, async (req, res) => {
   if (req.body.name != null) {
     res.product.name = req.body.name;
   }
@@ -48,19 +48,38 @@ router.patch("/update/:productId", getProduct, async (req, res) => {
     const updatedProduct = await res.product.save();
     res.json(updatedProduct);
   } catch (err) {
-    res.status(400).json({ errorMessage: err.message });
+    res.status(400).json({ message: err.message });
   }
 });
 
 // TODO: Delete product route
-router.delete("/delete/:productId", getProduct, async (req, res) => {
+router.delete("/:productId", authAdmin, getProduct, async (req, res) => {
   try {
     await res.product.remove();
     res.json({ message: "Product deleted" });
   } catch (err) {
-    res.status(500).json({ errorMessage: err.message });
+    res.status(500).json({ message: err.message });
   }
 });
+
+// Middleware - admin auth
+async function authAdmin(req, res, next) {
+  const token = req.headers["token"] || req.headers["authorization"];
+  if (!token)
+    return res.status(400).send({ message: "Invalid token or not provided!" });
+
+  try {
+    // Admin token check logic...
+    if (token !== "admin") {
+      return res.status(401).send({ message: "Unauthenticated" });
+    }
+  } catch (err) {
+    //if some other error
+    return res.status(500).send({ message: err.message });
+  }
+
+  next();
+}
 
 // Middleware - get single product
 async function getProduct(req, res, next) {
@@ -68,10 +87,10 @@ async function getProduct(req, res, next) {
   try {
     product = await Product.findById(req.params.productId);
     if (product == null) {
-      return res.status(404).json({ errorMessage: "Product not found" });
+      return res.status(404).json({ message: "Product not found" });
     }
   } catch (err) {
-    return res.status(500).json({ errorMessage: err.message });
+    return res.status(500).json({ message: err.message });
   }
   res.product = product;
   next();
