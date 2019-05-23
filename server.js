@@ -10,10 +10,12 @@ const bodyParser = require("body-parser");
 // Routers
 const indexRouter = require("./routes/index");
 const productRouter = require("./routes/products");
+const cartRouter = require("./routes/cart");
 
 app.use(bodyParser.json());
 app.use("/", indexRouter);
 app.use("/products", productRouter);
+app.use("/cart", cartRouter);
 
 const dbAddress = process.env.DATABASE_URL;
 const dbOptions = { useNewUrlParser: true };
