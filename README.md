@@ -54,6 +54,9 @@ REST API zwraca w przypadku błędów odpowiedni kod HTTP oraz komunikat w forma
 { message: err.message }
 ```
 
+## Mongoose tutorial
+https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/mongoose
+
 ## Koncept
 1. Autentykacja ogranicza się do odpowiedniego nagłówka.
 2. Anonimowy użytkownik otrzymuje losowy ID
