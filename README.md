@@ -29,3 +29,41 @@ Przetrzymywanie danych jak i ich struktura zależna jest od programisty! Pełna 
 **Zaliczenie odbędzie się na ostatnich zajęciach z NodeJS, czyli `25-26.05.2019`.**
 
 ## **POWODZENIA**! ;)
+
+# Notatki
+
+## Technologie
+- NodeJS
+- MongoDB (Atlas)
+- Express
+- Mongoose
+
+## Struktura bazy danych
+Baza mongodb przechowuje kolekcje:
+- products
+- users
+- carts
+
+## Poprawna obsługa kodów HTTP
+REST API musi obsługiwać i zwracać poprawne kody HTTP, trzymając się specyfikacji:
+https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+
+## Obsługa błedów
+REST API zwraca w przypadku błędów odpowiedni kod HTTP oraz komunikat w formacie JSON
+```
+{ message: err.message }
+```
+
+## Koncept
+1. Autentykacja ogranicza się do odpowiedniego nagłówka.
+2. Anonimowy użytkownik otrzymuje losowy ID
+3. 3 typy użykowników:
+  - Administrator (ma pełny dostęp do wszystkich zasobów)
+  - Zarejestrowany użytkownik
+  - Anonimowy użytkownik
+4. Różnica między administratorem a użytkownikiem jest taka, że użytkownik nie ma dostępu do edycji zasobu `products` (tylko metoda `GET`)
+5. Koszyk zapisuje ID użytkownika który jest jego właścicielem, jeżeli użytkownik nie ma koszyka -> zostaje mu on stworzony.
+6. Kazdy użytkonik ma tylko JEDEN koszyk
+7. Jeżeli ten sam produkt zostanie dodany do koszyka -> zsumuj do istniejącej pozycji
+8. (opcjonalne) koszyk starszy niż 1 dzień, zostaje usunięty
+9. (opcjonalne) anonimowy użytkownik zostaje usunięty po 48h (pamiętaj o koszykach)
