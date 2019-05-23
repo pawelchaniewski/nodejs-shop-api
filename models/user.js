@@ -1,0 +1,13 @@
+// Get user cart
+// var cart = cartsCol.findOne({ _id: userId })
+
+const mongoose = require("mongoose");
+
+const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  }
+});
+
+module.exports = mongoose.model("User", userSchema);
