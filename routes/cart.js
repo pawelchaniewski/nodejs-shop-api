@@ -44,6 +44,9 @@ router.post("/", authUser, getCart, async (req, res) => {
         },
         {
           $inc: { "products.$.count": order.count }
+        },
+        {
+          upsert: true
         }
       );
       cart = await Cart.findById(cart._id);
