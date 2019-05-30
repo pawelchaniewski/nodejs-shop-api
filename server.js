@@ -5,17 +5,33 @@ if (process.env.NODE_ENV !== "production") {
 const mongoose = require("mongoose");
 const express = require("express");
 const app = express();
-const bodyParser = require("body-parser");
+// No need for bodyparser in Express v4.16 onwards
+// const bodyParser = require("body-parser");
+// Use builtin parser
 
 // Routers
 const indexRouter = require("./routes/index");
 const productRouter = require("./routes/products");
 const cartRouter = require("./routes/cart");
 
-app.use(bodyParser.json());
+// If you want to prevent public stack trace - set env or NODE_ENV to production
+// app.set("env", "production");
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use("/", indexRouter);
 app.use("/products", productRouter);
 app.use("/cart", cartRouter);
+
+// Custom middleware for elegant JSON parse error handling
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    console.error(err);
+    res.status(400).send({ code: 400, message: `Bad request ${err.body}` });
+  } else {
+    next();
+  }
+});
 
 const dbAddress = process.env.DATABASE_URL;
 const dbOptions = { useNewUrlParser: true };
