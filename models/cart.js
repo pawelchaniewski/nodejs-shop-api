@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const User = require("./user");
 
 const cartSchema = new mongoose.Schema({
   products: [
@@ -11,6 +10,7 @@ const cartSchema = new mongoose.Schema({
       },
       count: {
         type: Number,
+        min: [1, "Too few"],
         required: true
       }
     }
@@ -21,14 +21,5 @@ const cartSchema = new mongoose.Schema({
     required: true
   }
 });
-
-cartSchema.statics.findByUserId = function(userId, callback) {
-  const query = this.findOne();
-
-  User.findOne({ _id: userId }, function(error, user) {
-    query.where({ userId: user._id }).exec(callback);
-  });
-  return query;
-};
 
 module.exports = mongoose.model("Cart", cartSchema);
