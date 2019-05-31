@@ -5,13 +5,11 @@ const cartSchema = new mongoose.Schema({
     {
       productId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Product",
-        required: true
+        ref: "Product"
       },
       count: {
         type: Number,
-        min: [1, "Too few"],
-        required: true
+        min: [1, "Too few"]
       }
     }
   ],

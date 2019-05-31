@@ -6,7 +6,11 @@ const Product = require("../models/product");
 
 // Single cart route (use header auth)
 router.get("/", authUser, getCart, (req, res) => {
-  res.json(res.cart);
+  if (!res.cart) {
+    return res.status(404).json({ message: "Cart not found!" });
+  }
+
+  return res.json(res.cart);
 });
 
 // Single cart route (use header auth)
@@ -28,33 +32,60 @@ router.post("/", authUser, getCart, async (req, res) => {
     count: req.body.count
   };
 
-  try {
-    if (!cart) {
+  if (!cart) {
+    try {
       const newCart = new Cart({
-        products: [order],
+        products: [],
         userId: user._id
       });
       cart = await newCart.save();
-    } else {
-      console.log(cart.products);
-      await Cart.update(
-        {
-          _id: cart._id,
-          "products.productId": order.productId
-        },
-        {
-          $inc: { "products.$.count": order.count }
-        },
-        {
-          upsert: true
-        }
-      );
-      cart = await Cart.findById(cart._id);
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
     }
-    res.json(cart);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
   }
+
+  const cartProducts = cart.products;
+  let updatedCartProducts;
+
+  if (!cartProducts || cartProducts.length === 0) {
+    updatedCartProducts = [order];
+  } else {
+    let productUpdated = false;
+    updatedCartProducts = cartProducts.map(item => {
+      if (item.productId.toString() === order.productId.toString()) {
+        item.count += order.count;
+        productUpdated = true;
+      }
+      return item;
+    });
+
+    if (!productUpdated) {
+      updatedCartProducts = [...cartProducts, order];
+    }
+  }
+
+  cart.products = updatedCartProducts;
+  // await Cart.update(
+  //   {
+  //     _id: cart._id,
+  //     "products.productId": order.productId
+  //   },
+  //   {
+  //     $inc: { "products.$.count": order.count }
+  //   },
+  //   {
+  //     upsert: true
+  //   }
+  // );
+
+  try {
+    cart = await cart.save();
+    // cart = await Cart.findById(cart._id);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+
+  return res.json(cart);
 });
 
 // Middleware - get single cart
