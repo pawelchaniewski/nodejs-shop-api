@@ -4,16 +4,16 @@ const Product = require("../models/product");
 
 // Single products route
 router.get("/:productId", getProduct, (req, res) => {
-  res.json(res.product);
+  return res.json(res.product);
 });
 
 // All products route
 router.get("/", async (req, res) => {
   try {
     const products = await Product.find({});
-    res.json(products);
+    return res.status(200).json(products);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -26,12 +26,9 @@ router.post("/", authAdmin, async (req, res) => {
 
   try {
     const newProduct = await product.save();
-    res.status(201).json({
-      id: newProduct.id,
-      message: "Success"
-    });
+    return res.status(201).json({ newProduct });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    return res.status(400).json({ message: err.message });
   }
 });
 
@@ -46,9 +43,9 @@ router.patch("/:productId", authAdmin, getProduct, async (req, res) => {
 
   try {
     const updatedProduct = await res.product.save();
-    res.json(updatedProduct);
+    return res.status(200).json(updatedProduct);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    return res.status(400).json({ message: err.message });
   }
 });
 
@@ -56,9 +53,9 @@ router.patch("/:productId", authAdmin, getProduct, async (req, res) => {
 router.delete("/:productId", authAdmin, getProduct, async (req, res) => {
   try {
     await res.product.remove();
-    res.json({ message: "Product deleted" });
+    return res.status(201).json({ message: "Product deleted" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
