@@ -9,10 +9,12 @@ const app = express();
 // const bodyParser = require("body-parser");
 // Use builtin parser
 
+const seed = require("./seed");
+
 // Routers
 const indexRouter = require("./routes/index");
 const productRouter = require("./routes/products");
-const cartRouter = require("./routes/cart");
+const orderRouter = require("./routes/orders");
 
 // If you want to prevent public stack trace - set env or NODE_ENV to production
 // app.set("env", "production");
@@ -21,7 +23,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use("/", indexRouter);
 app.use("/products", productRouter);
-app.use("/cart", cartRouter);
+app.use("/orders", orderRouter);
 
 // Custom middleware for elegant JSON parse error handling
 app.use((err, req, res, next) => {
@@ -39,7 +41,15 @@ mongoose.connect(dbAddress, dbOptions);
 
 const db = mongoose.connection;
 db.on("error", error => console.error(error));
-db.once("open", () => console.log("Connected to DB!"));
+db.once("open", async () => {
+  if (process.env.SEED_DB_FLAG) {
+    console.log("Seeding DB...");
+    await seed.eraseDatabase();
+    await seed.createUsers();
+    await seed.createProducts();
+  }
+  console.log("Connected to DB!");
+});
 
 app.listen(process.env.PORT || 4000, () => {
   console.log("Server is running...");
