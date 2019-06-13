@@ -4,103 +4,161 @@ const User = require("../models/user");
 const Product = require("../models/product");
 const Order = require("../models/order");
 
-// Single cart route (use header auth)
-router.get("/", authUser, getCart, (req, res) => {
-  if (!res.cart) {
-    return res.status(404).json({ message: "Cart not found!" });
+// List all orders
+router.get("/", authUser, getOrders, (req, res) => {
+  if (!res.order) {
+    return res.status(404).json({ message: "Order not found!" });
   }
 
-  return res.json(res.cart);
+  return res.json(res.order);
 });
 
-// Single cart route (use header auth)
-router.post("/", authUser, getCart, async (req, res) => {
-  let product;
-  const user = res.user;
-  let cart = res.cart;
-  try {
-    product = await Product.findById(req.body.productId);
-    if (product == null) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
+// Single order route (use header auth)
+router.get("/:orderId", authUser, getOrder, (req, res) => {
+  if (!res.order) {
+    return res.status(404).json({ message: "Order not found!" });
   }
 
-  const order = {
-    productId: product._id,
-    count: req.body.count
-  };
-
-  if (!cart) {
-    try {
-      const newCart = new Cart({
-        products: [],
-        userId: user._id
-      });
-      cart = await newCart.save();
-    } catch (err) {
-      return res.status(500).json({ message: err.message });
-    }
-  }
-
-  const cartProducts = cart.products;
-  let updatedCartProducts;
-
-  if (!cartProducts || cartProducts.length === 0) {
-    updatedCartProducts = [order];
-  } else {
-    let productUpdated = false;
-    updatedCartProducts = cartProducts.map(item => {
-      if (item.productId.toString() === order.productId.toString()) {
-        item.count += order.count;
-        productUpdated = true;
-      }
-      return item;
-    });
-
-    if (!productUpdated) {
-      updatedCartProducts = [...cartProducts, order];
-    }
-  }
-
-  cart.products = updatedCartProducts;
-  // await Cart.update(
-  //   {
-  //     _id: cart._id,
-  //     "products.productId": order.productId
-  //   },
-  //   {
-  //     $inc: { "products.$.count": order.count }
-  //   },
-  //   {
-  //     upsert: true
-  //   }
-  // );
-
-  try {
-    cart = await cart.save();
-    // cart = await Cart.findById(cart._id);
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-
-  return res.json(cart);
+  return res.json(res.order);
 });
 
-// Middleware - get single cart
-async function getCart(req, res, next) {
-  let cart;
+// Create new order
+router.post("/", authUser, async (req, res) => {
+  const order = new Order({});
+});
+
+// Get items in order
+router.get("/:orderId/items", authUser, async (req, res) => {
+  // logic....
+});
+
+// Get single item in order
+router.get("/:orderId/items/:itemId", authUser, async (req, res) => {
+  // logic....
+});
+
+// Add item to order
+router.post("/:orderId/items/:itemId", authUser, async (req, res) => {
+  // logic....
+});
+
+// Edit item in order
+router.patch("/:orderId/items/:itemId", authUser, async (req, res) => {
+  // logic....
+});
+
+// Remove order
+router.delete("/:orderId", authUser, async (req, res) => {
+  // logic....
+});
+
+// Remove item from order
+router.delete("/:orderId/items/:itemId", authUser, async (req, res) => {
+  // logic....
+});
+
+// // Single order route (use header auth)
+// router.post("/", authUser, getOrder, async (req, res) => {
+//   let product;
+//   const user = res.user;
+//   let order = res.order;
+//   try {
+//     product = await Product.findById(req.body.productId);
+//     if (product == null) {
+//       return res.status(404).json({ message: "Product not found" });
+//     }
+//   } catch (err) {
+//     return res.status(500).json({ message: err.message });
+//   }
+
+//   const order = {
+//     productId: product._id,
+//     count: req.body.count
+//   };
+
+//   if (!order) {
+//     try {
+//       const newOrder = new Order({
+//         products: [],
+//         userId: user._id
+//       });
+//       order = await newOrder.save();
+//     } catch (err) {
+//       return res.status(500).json({ message: err.message });
+//     }
+//   }
+
+//   const orderProducts = order.products;
+//   let updatedOrderProducts;
+
+//   if (!orderProducts || orderProducts.length === 0) {
+//     updatedOrderProducts = [order];
+//   } else {
+//     let productUpdated = false;
+//     updatedOrderProducts = orderProducts.map(item => {
+//       if (item.productId.toString() === order.productId.toString()) {
+//         item.count += order.count;
+//         productUpdated = true;
+//       }
+//       return item;
+//     });
+
+//     if (!productUpdated) {
+//       updatedOrderProducts = [...orderProducts, order];
+//     }
+//   }
+
+//   order.products = updatedOrderProducts;
+//   // await Order.update(
+//   //   {
+//   //     _id: order._id,
+//   //     "products.productId": order.productId
+//   //   },
+//   //   {
+//   //     $inc: { "products.$.count": order.count }
+//   //   },
+//   //   {
+//   //     upsert: true
+//   //   }
+//   // );
+
+//   try {
+//     order = await order.save();
+//     // order = await Order.findById(order._id);
+//   } catch (err) {
+//     return res.status(500).json({ message: err.message });
+//   }
+
+//   return res.json(order);
+// });
+
+// Middleware - get single order
+async function getOrder(req, res, next) {
+  let order;
   const user = res.user;
   try {
-    cart = await Cart.findOne({
-      userId: user._id
-    });
+    order = await Order.findById(req.params.orderId);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
 
-  res.cart = cart;
+  res.order = order;
+  next();
+}
+
+// Middleware - get all orders
+async function getOrders(req, res, next) {
+  let orders;
+  const user = res.user;
+  try {
+    orders = await Order.findByUserId(user._id);
+    if (orders == null) {
+      return res.status(404).json({ message: "No orders found" });
+    }
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+  res.orders = orders;
   next();
 }
 

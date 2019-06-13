@@ -5,8 +5,11 @@ router.get("/:userId", getUser, (req, res) => {
   return res.json(res.user);
 });
 
-router.get("/:userId/orders", getUser, getOrder, (req, res) => {
-  return res.json(res.order);
+router.get("/:userId/orders", getUser, getOrders, (req, res) => {
+  // const response = res.orders.map(obj => {
+  //   order: obj._id;
+  // });
+  return res.json(res.orders);
 });
 
 // Middleware - get single user
@@ -24,21 +27,19 @@ async function getUser(req, res, next) {
   next();
 }
 
-// Middleware - get single user
-async function getOrder(req, res, next) {
-  let order;
+// Middleware - get single order
+async function getOrders(req, res, next) {
+  let orders;
   const user = res.user;
   try {
-    order = await Order.findOne({
-      user: user._id
-    });
-    if (order == null) {
-      return res.status(404).json({ message: "Order not found" });
+    orders = await Order.findByUserId(user._id);
+    if (orders == null) {
+      return res.status(404).json({ message: "No orders found" });
     }
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
-  res.order = order;
+  res.orders = orders;
   next();
 }
 
