@@ -26,8 +26,4 @@ orderSchema.statics.findByUserId = function(userId) {
   return this.find({ user: userId });
 };
 
-orderSchema.virtual("fullName").get(function() {
-  return this.name.first + " " + this.name.last;
-});
-
 module.exports = mongoose.model("Order", orderSchema);
