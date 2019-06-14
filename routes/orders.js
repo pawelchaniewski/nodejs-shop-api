@@ -6,11 +6,7 @@ const Order = require("../models/order");
 
 // List all orders
 router.get("/", authUser, getOrders, (req, res) => {
-  if (!res.order) {
-    return res.status(404).json({ message: "Order not found!" });
-  }
-
-  return res.json(res.order);
+  return res.json(res.orders);
 });
 
 // Single order route (use header auth)
@@ -24,120 +20,169 @@ router.get("/:orderId", authUser, getOrder, (req, res) => {
 
 // Create new order
 router.post("/", authUser, async (req, res) => {
-  const order = new Order({});
+  const user = res.user;
+  const items = req.body.items || [];
+  const order = new Order({
+    items: items,
+    user: user._id
+  });
+
+  try {
+    const newOrder = await order.save();
+    return res.status(201).json(newOrder);
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
 });
 
 // Get items in order
-router.get("/:orderId/items", authUser, async (req, res) => {
-  // logic....
+router.get("/:orderId/items", authUser, getOrder, async (req, res) => {
+  if (!res.order) {
+    return res.status(404).json({ message: "Order not found!" });
+  }
+
+  return res.json(res.order.items);
 });
 
 // Get single item in order
-router.get("/:orderId/items/:itemId", authUser, async (req, res) => {
-  // logic....
-});
+router.get(
+  "/:orderId/items/:productId",
+  authUser,
+  getOrder,
+  async (req, res) => {
+    if (!res.order) {
+      return res.status(404).json({ message: "Order not found!" });
+    }
+
+    const existingItem = res.order.items.find(
+      item => item.product === req.params.productId
+    );
+
+    if (!existingItem) {
+      return res.status(404).json({ message: "Item not found!" });
+    }
+
+    return res.json(existingItem);
+  }
+);
 
 // Add item to order
-router.post("/:orderId/items/:itemId", authUser, async (req, res) => {
-  // logic....
+// TODO: Make it work, find solution to validate input and adding up amount of ordered products
+router.post("/:orderId/items", authUser, getOrder, async (req, res) => {
+  const currentOrder = res.order;
+  const currentOrderItems = currentOrder.items;
+  const requestOrderItems = req.body;
+  let updatedOrderItems;
+
+  if (!requestOrderItems || !(requestOrderItems instanceof Array)) {
+    return res
+      .status(400)
+      .json({ message: "Request is not valid array or empty!" });
+  }
+
+  if (currentOrderItems == null || currentOrderItems.length === 0) {
+    console.log("Tutaj");
+    updatedOrderItems = [...requestOrderItems];
+  } else {
+    updatedOrderItems = requestOrderItems.map(function(newItem) {
+      const existingItem = currentOrderItems.find(
+        item => item.product === newItem.product
+      );
+
+      let updatedItem;
+
+      if (existingItem) {
+        updatedItem = existingItem;
+        updatedItem.count += newItem.count;
+      } else {
+        updatedItem = newItem;
+      }
+
+      console.log(updatedItem);
+      return updatedItem;
+    });
+  }
+
+  try {
+    // console.log(res.order.items);
+    // console.log(updatedOrderItems);
+
+    // res.order.items = updatedOrderItems;
+    // currentOrder = await res.order.save();
+    await Order.findOneAndUpdate(
+      { _id: currentOrder._id },
+      {
+        $set: { items: updatedOrderItems }
+      }
+    );
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+
+  return res.json(updatedOrderItems);
 });
 
 // Edit item in order
-router.patch("/:orderId/items/:itemId", authUser, async (req, res) => {
-  // logic....
+router.patch("/:orderId/items/:productId", authUser, async (req, res) => {
+  const currentOrder = res.order;
+  const currentOrderItems = currentOrder.items;
+  const existingItemIndex = currentOrderItems.findIndex(
+    item => item.product === req.params.productId
+  );
+
+  if (existingItemIndex === -1) {
+    return res.status(404).json({ message: "Item not found" });
+  }
+
+  const existingItem = currentOrderItems[existingItemIndex];
+
+  const updatedItem = {
+    product: existingItem.product,
+    quantity:
+      req.body.quantity != null ? req.body.quantity : existingItem.quantity
+  };
+
+  const updatedOrderItems = currentOrderItems.splice(existingItemIndex, 1);
+  updatedOrderItems.push(updatedItem);
+  res.order.items = updatedOrderItems;
+
+  try {
+    const updatedOrder = await res.order.save();
+    return res.status(200).json(updatedOrder);
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
 });
 
 // Remove order
 router.delete("/:orderId", authUser, async (req, res) => {
-  // logic....
+  try {
+    await res.order.remove();
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+
+  return res.status(204);
 });
 
 // Remove item from order
-router.delete("/:orderId/items/:itemId", authUser, async (req, res) => {
-  // logic....
+router.delete("/:orderId/items/:productId", authUser, async (req, res) => {
+  try {
+    currentOrder.items.pull({ product: req.params.productId });
+    currentOrder = await currentOrder.save();
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+
+  return res.status(204);
 });
-
-// // Single order route (use header auth)
-// router.post("/", authUser, getOrder, async (req, res) => {
-//   let product;
-//   const user = res.user;
-//   let order = res.order;
-//   try {
-//     product = await Product.findById(req.body.productId);
-//     if (product == null) {
-//       return res.status(404).json({ message: "Product not found" });
-//     }
-//   } catch (err) {
-//     return res.status(500).json({ message: err.message });
-//   }
-
-//   const order = {
-//     productId: product._id,
-//     count: req.body.count
-//   };
-
-//   if (!order) {
-//     try {
-//       const newOrder = new Order({
-//         products: [],
-//         userId: user._id
-//       });
-//       order = await newOrder.save();
-//     } catch (err) {
-//       return res.status(500).json({ message: err.message });
-//     }
-//   }
-
-//   const orderProducts = order.products;
-//   let updatedOrderProducts;
-
-//   if (!orderProducts || orderProducts.length === 0) {
-//     updatedOrderProducts = [order];
-//   } else {
-//     let productUpdated = false;
-//     updatedOrderProducts = orderProducts.map(item => {
-//       if (item.productId.toString() === order.productId.toString()) {
-//         item.count += order.count;
-//         productUpdated = true;
-//       }
-//       return item;
-//     });
-
-//     if (!productUpdated) {
-//       updatedOrderProducts = [...orderProducts, order];
-//     }
-//   }
-
-//   order.products = updatedOrderProducts;
-//   // await Order.update(
-//   //   {
-//   //     _id: order._id,
-//   //     "products.productId": order.productId
-//   //   },
-//   //   {
-//   //     $inc: { "products.$.count": order.count }
-//   //   },
-//   //   {
-//   //     upsert: true
-//   //   }
-//   // );
-
-//   try {
-//     order = await order.save();
-//     // order = await Order.findById(order._id);
-//   } catch (err) {
-//     return res.status(500).json({ message: err.message });
-//   }
-
-//   return res.json(order);
-// });
 
 // Middleware - get single order
 async function getOrder(req, res, next) {
   let order;
   const user = res.user;
   try {
-    order = await Order.findById(req.params.orderId);
+    order = await Order.findOne({ _id: req.params.orderId, user: user._id });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
