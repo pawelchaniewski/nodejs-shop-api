@@ -20,13 +20,16 @@ router.get("/", async (req, res) => {
 // Add product route
 router.post("/", authAdmin, async (req, res) => {
   const product = new Product({
-    name: req.body.name,
-    stock: req.body.stock || 0
+    title: req.body.title,
+    description: req.body.stock || "",
+    price: req.body.price,
+    stock: req.body.stock || 0,
+    imageUrl: req.body.imageUrl
   });
 
   try {
     const newProduct = await product.save();
-    return res.status(201).json({ newProduct });
+    return res.status(201).json(newProduct);
   } catch (err) {
     return res.status(400).json({ message: err.message });
   }
@@ -34,12 +37,22 @@ router.post("/", authAdmin, async (req, res) => {
 
 // Update one product route
 router.patch("/:productId", authAdmin, getProduct, async (req, res) => {
-  if (req.body.name != null) {
-    res.product.name = req.body.name;
-  }
+  // if (req.body.name != null) {
+  //   res.product.name = req.body.name;
+  // }
 
+  res.product.title =
+    req.body.title != null ? req.body.title : res.product.title;
+  res.product.description =
+    req.body.description != null
+      ? req.body.description
+      : res.product.description;
+  res.product.price =
+    req.body.price != null ? req.body.price : res.product.price;
   res.product.stock =
     req.body.stock != null ? req.body.stock : res.product.stock;
+  res.product.imageUrl =
+    req.body.imageUrl != null ? req.body.imageUrl : res.product.imageUrl;
 
   try {
     const updatedProduct = await res.product.save();
@@ -53,10 +66,11 @@ router.patch("/:productId", authAdmin, getProduct, async (req, res) => {
 router.delete("/:productId", authAdmin, getProduct, async (req, res) => {
   try {
     await res.product.remove();
-    return res.status(201).json({ message: "Product deleted" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
+
+  return res.status(204);
 });
 
 // Middleware - admin auth

@@ -1,8 +1,20 @@
 const express = require("express");
 const router = express.Router();
+const User = require("../models/user");
+const Order = require("../models/order");
 
 router.get("/:userId", getUser, (req, res) => {
   return res.json(res.user);
+});
+
+router.get("/", async (req, res) => {
+  let users;
+  try {
+    users = await User.find({});
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+  return res.status(200).json(users);
 });
 
 router.get("/:userId/orders", getUser, getOrders, (req, res) => {
@@ -18,7 +30,7 @@ async function getUser(req, res, next) {
   try {
     user = await User.findById(req.params.userId);
     if (user == null) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({ message: "User not found" });
     }
   } catch (err) {
     return res.status(500).json({ message: err.message });

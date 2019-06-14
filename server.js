@@ -15,6 +15,7 @@ const seed = require("./seed");
 const indexRouter = require("./routes/index");
 const productRouter = require("./routes/products");
 const orderRouter = require("./routes/orders");
+const userRouter = require("./routes/users");
 
 // If you want to prevent public stack trace - set env or NODE_ENV to production
 // app.set("env", "production");
@@ -24,6 +25,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use("/", indexRouter);
 app.use("/products", productRouter);
 app.use("/orders", orderRouter);
+app.use("/users", userRouter);
 
 // Custom middleware for elegant JSON parse error handling
 app.use((err, req, res, next) => {
