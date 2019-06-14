@@ -67,115 +67,109 @@ router.get(
 );
 
 // Add item to order
-// TODO: Make it work, find solution to validate input and adding up amount of ordered products
 router.post("/:orderId/items", authUser, getOrder, async (req, res) => {
-  const currentOrder = res.order;
-  const currentOrderItems = currentOrder.items;
-  const requestOrderItems = req.body;
-  let updatedOrderItems;
+  // const currentOrder = res.order;
+  // const currentOrderItems = [...currentOrder.items];
+  const requestOrderItem = req.body;
 
-  if (!requestOrderItems || !(requestOrderItems instanceof Array)) {
-    return res
-      .status(400)
-      .json({ message: "Request is not valid array or empty!" });
-  }
-
-  if (currentOrderItems == null || currentOrderItems.length === 0) {
-    console.log("Tutaj");
-    updatedOrderItems = [...requestOrderItems];
+  if (res.order.items == null || res.order.items.length === 0) {
+    updatedOrderItems = [...res.order.items, requestOrderItem];
   } else {
-    updatedOrderItems = requestOrderItems.map(function(newItem) {
-      const existingItem = currentOrderItems.find(
-        item => item.product === newItem.product
-      );
-
-      let updatedItem;
-
-      if (existingItem) {
-        updatedItem = existingItem;
-        updatedItem.count += newItem.count;
-      } else {
-        updatedItem = newItem;
+    let itemUpdated = false;
+    updatedOrderItems = res.order.items.map(function(item) {
+      const newItem = item.toObject();
+      if (item.product.equals(req.body.product)) {
+        newItem.quantity += requestOrderItem.quantity;
+        itemUpdated = true;
       }
-
-      console.log(updatedItem);
-      return updatedItem;
+      return newItem;
     });
+
+    if (!itemUpdated) {
+      updatedOrderItems = [...res.order.items, requestOrderItem];
+    }
   }
 
   try {
-    // console.log(res.order.items);
-    // console.log(updatedOrderItems);
-
-    // res.order.items = updatedOrderItems;
-    // currentOrder = await res.order.save();
-    await Order.findOneAndUpdate(
-      { _id: currentOrder._id },
+    const updatedOrder = await Order.findOneAndUpdate(
+      { _id: res.order._id },
       {
         $set: { items: updatedOrderItems }
-      }
+      },
+      { new: true }
     );
+    return res.json(updatedOrder.items);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
-
-  return res.json(updatedOrderItems);
 });
 
 // Edit item in order
-router.patch("/:orderId/items/:productId", authUser, async (req, res) => {
-  const currentOrder = res.order;
-  const currentOrderItems = currentOrder.items;
-  const existingItemIndex = currentOrderItems.findIndex(
-    item => item.product === req.params.productId
-  );
+router.patch(
+  "/:orderId/items/:productId",
+  authUser,
+  getOrder,
+  async (req, res) => {
+    // const currentOrder = res.order;
+    const currentOrderItems = [...res.order.items];
+    const existingItemIndex = res.order.items.findIndex(item =>
+      item.product.equals(req.params.productId)
+    );
 
-  if (existingItemIndex === -1) {
-    return res.status(404).json({ message: "Item not found" });
+    if (existingItemIndex === -1) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    const existingItem = res.order.items[existingItemIndex];
+
+    const updatedItem = {
+      product: existingItem.product,
+      quantity:
+        req.body.quantity != null ? req.body.quantity : existingItem.quantity
+    };
+
+    const updatedOrderItems = res.order.items.splice(existingItemIndex, 1);
+    updatedOrderItems.push(updatedItem);
+    res.order.items = updatedOrderItems;
+
+    try {
+      const updatedOrder = await res.order.save();
+      return res.status(200).json(updatedOrder.items);
+    } catch (err) {
+      return res.status(400).json({ message: err.message });
+    }
   }
-
-  const existingItem = currentOrderItems[existingItemIndex];
-
-  const updatedItem = {
-    product: existingItem.product,
-    quantity:
-      req.body.quantity != null ? req.body.quantity : existingItem.quantity
-  };
-
-  const updatedOrderItems = currentOrderItems.splice(existingItemIndex, 1);
-  updatedOrderItems.push(updatedItem);
-  res.order.items = updatedOrderItems;
-
-  try {
-    const updatedOrder = await res.order.save();
-    return res.status(200).json(updatedOrder);
-  } catch (err) {
-    return res.status(400).json({ message: err.message });
-  }
-});
+);
 
 // Remove order
-router.delete("/:orderId", authUser, async (req, res) => {
+router.delete("/:orderId", authUser, getOrder, async (req, res) => {
   try {
-    await res.order.remove();
+    const result = await res.order.remove();
+    return res.status(204).send(result);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
-
-  return res.status(204);
 });
 
 // Remove item from order
-router.delete("/:orderId/items/:productId", authUser, async (req, res) => {
-  try {
-    currentOrder.items.pull({ product: req.params.productId });
-    currentOrder = await currentOrder.save();
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
+router.delete(
+  "/:orderId/items/:productId",
+  authUser,
+  getOrder,
+  async (req, res) => {
+    try {
+      const result = await Order.findOneAndUpdate(
+        { _id: res.order._id },
+        {
+          items: { $pull: { product: req.params.productId } }
+        }
+      );
+      return res.status(204).json(result);
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
+    }
   }
-
-  return res.status(204);
-});
+);
 
 // Middleware - get single order
 async function getOrder(req, res, next) {
@@ -183,6 +177,9 @@ async function getOrder(req, res, next) {
   const user = res.user;
   try {
     order = await Order.findOne({ _id: req.params.orderId, user: user._id });
+    if (order == null) {
+      return res.status(404).json({ message: "Order not found" });
+    }
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }

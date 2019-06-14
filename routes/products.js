@@ -37,10 +37,6 @@ router.post("/", authAdmin, async (req, res) => {
 
 // Update one product route
 router.patch("/:productId", authAdmin, getProduct, async (req, res) => {
-  // if (req.body.name != null) {
-  //   res.product.name = req.body.name;
-  // }
-
   res.product.title =
     req.body.title != null ? req.body.title : res.product.title;
   res.product.description =
@@ -65,12 +61,11 @@ router.patch("/:productId", authAdmin, getProduct, async (req, res) => {
 // TODO: Delete product route
 router.delete("/:productId", authAdmin, getProduct, async (req, res) => {
   try {
-    await res.product.remove();
+    const result = await res.product.remove();
+    return res.status(204).json(result);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
-
-  return res.status(204);
 });
 
 // Middleware - admin auth
